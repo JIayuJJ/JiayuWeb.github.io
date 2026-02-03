@@ -1,0 +1,672 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Sep  6 13:32:59 2024
+
+@author: admin
+"""
+
+import os
+
+from boolean_parser import parse
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import ElementTree
+
+
+table = [
+    'advance_compare_fea',
+    'advance_joint_model_v5_fea',
+    'advance_multi_platform_fea_v1',
+    'advance_cbi_fea_v1',
+    'app_category_fea',
+    'app_list_fea_v3',
+    'app_top_fea',
+    'app_top_fit_fea',
+    'change_bankcard_fea',
+    'chinese_item_fea',
+    # 'compare_name_idcard_fea',
+    'credit_rule_fea',
+    'env_info_record',
+    # 'extra_fea',
+    'fraud_analyse_fea',
+    'fraud_analyse_fea_alpha',
+    'fraud_analyse_fea_new',
+    'fraud_analyse_split_fea',
+    'idn_app_bayes_fea',
+    'idn_app_code_fea',
+    'idn_app_tgi_fea',
+    'izi_credit_fea_v3_new',
+    'izi_fraud_fea_v3',
+    'izi_multi_plat_v1_1_fea',
+    'izi_multi_plat_v1_2_fea',
+    'izi_multi_plat_v1_3_fea',
+    'loan_again_fea_extra',
+    'loan_again_fea_original',
+    'loan_again_fea_third',
+    # 'loan_again_fea_v1',
+    'login_log_fea',
+    'model_fdc_fea',
+    'model_fdc_v1_fea',
+    'model_fdc_v2_fea',
+    'model_cbi_v1_fea',
+    'model_cbi_v2_fea',
+    'model_result',
+    'neo4j_relation_fea',
+    'neo4j_relation_fea_alpha',
+    'neo4j_relation_fea_alpha_new',
+    'neo4j_relation_fea_device',
+    'neo4j_relation_fea_ext',
+    'neo4j_relation_fea_ext_new',
+    'neo4j_relation_fea_new',
+    'person_info',
+    'policy_loan_fea',
+    're_apply_loan_fea',
+    're_history_loan_performance',
+    're_login_operafea',
+    're_overdue_loan_fea',
+    're_repayment_fea',
+    're_repayment_fea_split',
+    'repayment_performance_fea',
+    'repayment_performance_fea_split',
+    'rule_fdc_fea',
+    'rule_history_loan_performance_v2_fea',
+    'rule_history_loan_performance_v3_fea',
+    'rule_izi_fea',
+    'same_info_fea',
+    'same_info_fea_new',
+    'user_env_fea',
+    'user_loan_again_fea',
+    'user_loan_again_term2_fea',
+    'wifi_info_fea',
+    'work_info',
+    'model_fdc_v3_2_fea',
+    'model_fdc_v3_1_fea'
+]
+
+cond_map = {
+    "<": "LessThan",
+    "<=": "LessThenEquals",
+    ">": "GreaterThen",
+    ">=": "GreaterThenEqual",
+    "==": "Equals",
+}
+
+table_suffix = {'app_category_fea': '_appc',
+                'app_list_fea_v3': '_app3',
+                'app_top_fea': '_top',
+                'app_top_fit_fea': '_fit',
+                'change_bankcard_fea': '_cbf',
+                'chinese_item_fea': '_cif',
+                'credit_rule_fea': '_crf',
+                'env_info_record': '_env',
+                'fraud_analyse_fea': '_fra',
+                'fraud_analyse_fea_alpha': '_falpha',
+                'fraud_analyse_fea_new': '_fn',
+                'fraud_analyse_split_fea': '_fsplit',
+                'idn_app_bayes_fea': '_bayes',
+                'idn_app_code_fea': '_code',
+                'idn_app_tgi_fea': '_tgi',
+                'login_log_fea': '_log',
+                'neo4j_relation_fea': '_neo',
+                'neo4j_relation_fea_alpha': '_nalpha',
+                'neo4j_relation_fea_alpha_new': '_nalphan',
+                'neo4j_relation_fea_device': '_ndev',
+                'neo4j_relation_fea_ext': '_next',
+                'neo4j_relation_fea_ext_new': '_nextn',
+                'neo4j_relation_fea_new': '_nnew',
+                'person_info': '_pi',
+                'policy_loan_fea': '_plf',
+                'same_info_fea': '_sif',
+                'same_info_fea_new': '_sifn',
+                'user_env_fea': '_usr',
+                'wifi_info_fea': '_wifi',
+                'work_info': '_work',
+                're_apply_loan_fea': '_reapply',
+                're_history_loan_performance': '_rehis',
+                're_login_operafea': '_relog',
+                're_overdue_loan_fea': '_reover',
+                're_repayment_fea': '_re',
+                're_repayment_fea_split': '_resplt',
+                'repayment_performance_fea': '_repay',
+                'repayment_performance_fea_split': '_rpsplt',
+                'rule_history_loan_performance_v2_fea': '_rhis2',
+                'rule_history_loan_performance_v3_fea': '_rhis3',
+                'user_loan_again_fea': '_uloan',
+                'user_loan_again_term2_fea': '_uloan2',
+
+                'advance_cbi_fea_v1': '_cbi',
+                'advance_compare_fea': '_acom',
+                'advance_joint_model_v5_fea': '_av5',
+                'advance_multi_platform_fea': '_amul',
+                'izi_credit_fea_v3_new': '_izic',
+                'izi_fraud_fea_v3': '_izif',
+                'izi_multi_plat_v1_1_fea': '_izi1',
+                'izi_multi_plat_v1_2_fea': '_izi2',
+                'izi_multi_plat_v1_3_fea': '_izi3',
+                'model_cbi_v1_fea': '_cbi1',
+                'model_cbi_v2_fea': '_cbi2',
+                'model_fdc_fea': '_fdc',
+                'model_fdc_v1_fea': '_fdc1',
+                'model_fdc_v2_fea': '_fdc2',
+                'rule_fdc_fea': '_rfdc',
+                'rule_izi_fea': '_rizi',
+                'model_fdc_v3_2_fea': '_fdc_v3_2',
+                'model_fdc_v3_1_fea': '_fdc_v3'
+                }
+
+
+def GetRulesMapFromFile(files):
+    table_map = {}
+    rules_map = {}
+    label_map = {}
+    type_map = {}
+    for file in files:
+        tree = ElementTree(file=file)
+        root = tree.getroot()
+        for category in root.iter('category'):
+            table_name = category.attrib['name']
+            if table_name not in table:
+                continue
+            for elem in category.iter('var'):
+                name = elem.attrib['name']
+                label = elem.attrib['label']
+                types = elem.attrib['type']
+                lower_name = name.lower()
+                suffix = table_suffix.get(table_name, '')
+                suffix = suffix.replace('_', '')
+                lower_name = lower_name + suffix
+                table_map[lower_name] = table_name
+                rules_map[lower_name] = name
+                label_map[lower_name] = label
+                type_map[lower_name] = types
+    return table_map, rules_map, label_map, type_map
+
+
+def GenIfBranch(parent, logicop, conditions, reloan_type,
+                reloan_type_value, table_map, rules_map, label_map, type_map):
+    if_con_branch = SubElement(parent, 'if')
+    if logicop == "and":
+        cond_element = SubElement(if_con_branch, "and")
+    elif logicop == "or":
+        cond_element = SubElement(if_con_branch, "or")
+    else:
+        assert False, f'unsupport op: {logicop}'
+    atom = SubElement(cond_element, "atom", op="Equals")
+    left_attrs = {
+        "var-category": "参数",
+        "var": reloan_type,
+        "var-label": "firstloan_risk_level",
+        "datatype": "Integer",
+        "type": "parameter",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+    value_attr = {
+        "content": reloan_type_value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+    for cond in conditions:
+        atom = SubElement(cond_element, "atom",
+                          op=cond_map[cond.operator])
+
+        cond_name = cond.name.replace('_', '').lower()
+
+        # if cond.name.startswith(('orig_', 'extra_', 'third_')):
+        #     cond_name = cond.name.replace('_', '').lower()
+        # else:
+        #     remove_suffix = "_".join(cond.name.split("_")[:-1])
+        #     cond_name = remove_suffix.replace('_', '').lower()
+
+        left_attrs = {
+            "var-category": table_map[cond_name],
+            "var": rules_map[cond_name],
+            "var-label": label_map[cond_name],
+            "datatype": type_map[cond_name],
+            "type": "variable",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+
+        value_attr = {
+            "content": cond.value,
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+
+def GenTagBranch(parent, condition, reloan_type,
+                reloan_type_value, table_map, rules_map, label_map, type_map):
+    if_con_branch = SubElement(parent, 'if')
+
+    cond_element = SubElement(if_con_branch, "and")
+
+    atom = SubElement(cond_element, "atom", op="Equals")
+    left_attrs = {
+        "var-category": "参数",
+        "var": reloan_type,
+        "var-label": "firstloan_risk_level",
+        "datatype": "Integer",
+        "type": "parameter",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+    value_attr = {
+        "content": reloan_type_value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+
+    atom = SubElement(cond_element, "atom",
+                      op=cond_map[condition.operator])
+
+    cond_name = condition.name.replace('_', '').lower()
+
+    # if condition.name.startswith(('orig_', 'extra_', 'third_')):
+    #     cond_name = condition.name.replace('_', '').lower()
+    # else:
+    #     remove_suffix = "_".join(condition.name.split("_")[:-1])
+    #     cond_name = remove_suffix.replace('_', '').lower()
+
+    left_attrs = {
+        "var-category": table_map[cond_name],
+        "var": rules_map[cond_name],
+        "var-label": label_map[cond_name],
+        "datatype": type_map[cond_name],
+        "type": "variable",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+
+    value_attr = {
+        "content": condition.value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+
+
+def GenThenBranch(parent, reloan_type_value, value: float, black_list:str):
+    then_branch = SubElement(parent, "then")
+    
+    black_list = black_list.strip()
+    # print(black_list,  '--------')
+
+    if black_list == '300':
+        value_attr = {
+        "var-category": "参数",
+        "var": "is_firstloan_group%s_black3" % reloan_type_value,
+        "var-label": "firstloan_group%s_black3" % reloan_type_value,
+        "datatype": "Integer",
+        "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+            }
+    
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    elif black_list == '200':
+        value_attr = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black2" % reloan_type_value,
+            "var-label": "firstloan_group%s_black2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+        }
+
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    elif black_list == '100':
+        value_attr = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black" % reloan_type_value,
+            "var-label": "firstloan_group%s_black" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+        }
+
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    elif black_list == '1':
+        value_attr = {
+        "var-category": "参数",
+        "var": "is_firstloan_group%s_white" % reloan_type_value,
+        "var-label": "firstloan_group%s_white" % reloan_type_value,
+        "datatype": "Integer",
+        "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+            }
+    
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    elif black_list == '2':
+        value_attr = {
+        "var-category": "参数",
+        "var": "is_firstloan_group%s_white2" % reloan_type_value,
+        "var-label": "firstloan_group%s_white2" % reloan_type_value,
+        "datatype": "Integer",
+        "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+            }
+
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    elif black_list == '3':
+        value_attr = {
+        "var-category": "参数",
+        "var": "is_firstloan_group%s_white3" % reloan_type_value,
+        "var-label": "firstloan_group%s_white3" % reloan_type_value,
+        "datatype": "Integer",
+        "type": "parameter"
+        }
+        var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+        list_value_attr = {
+            "content": '1',
+            "type": "Input"
+            }
+
+        list_value = SubElement(var_assign, "value", attrib=list_value_attr)
+
+    else:
+        pass
+    
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_rule_score_" + reloan_type_value,
+        "var-label": "firstloan_rule_score_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "parameter"
+    }
+    var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_rule_score_" + reloan_type_value,
+        "var-label": "firstloan_rule_score_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "Parameter"
+    }
+    xml_value = SubElement(var_assign, "value", attrib=value_attr)
+
+    add_attr = {
+        "type": "Add"
+    }
+    sub_attr = {
+        "type": "Sub"
+    }
+    if value >= 0:
+        com = SubElement(xml_value, "complex-arith", attrib=add_attr)
+    else:
+        com = SubElement(xml_value, "complex-arith", attrib=sub_attr)
+
+    value_attr = {
+        "content": str(abs(value)),
+        "type": "Input"
+    }
+    SubElement(com, "value", attrib=value_attr)
+
+
+def GenElseBranch(parent, reloan_type_value, value: float):
+    then_branch = SubElement(parent, "else")
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_rule_score_" + reloan_type_value,
+        "var-label": "firstloan_rule_score_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "parameter"
+    }
+    var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_rule_score_" + reloan_type_value,
+        "var-label": "firstloan_rule_score_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "Parameter"
+    }
+    xml_value = SubElement(var_assign, "value", attrib=value_attr)
+
+    add_attr = {
+        "type": "Add"
+    }
+    sub_attr = {
+        "type": "Sub"
+    }
+    if value >= 0:
+        com = SubElement(xml_value, "complex-arith", attrib=add_attr)
+    else:
+        com = SubElement(xml_value, "complex-arith", attrib=sub_attr)
+
+    value_attr = {
+        "content": str(abs(value)),
+        "type": "Input"
+    }
+    SubElement(com, "value", attrib=value_attr)
+
+
+def ToXml(table_map, rules_map, label_map, type_map, rules_file):
+    root = Element("rule-set")
+    rema = SubElement(root, 'remark')
+    rema.text = "<![CDATA[]]>"
+
+    # with open(rules_file) as f:
+    if True:
+        f = rules_file
+        for data in f:
+            # print(data)
+            data = data.split('|')
+            rule = data[1]
+            # parse rule
+            # print('222', rule)
+            ret = parse(rule)
+            # print('123', ret)
+
+            reloan_type = data[0].split('=')[0].strip()
+            # reloan_type = 'is_firstloan_group'
+            reloan_type_value = data[0].split('=')[1].strip()
+            xml_rule = SubElement(root, 'rule', name="rule")
+            remark_branch = SubElement(xml_rule, 'remark')
+            remark_branch.text = '<![CDATA[]]>'
+            # print(reloan_type, reloan_type_value)
+
+            if hasattr(ret, "logicop"):
+                # print('123-1')
+                logicop = ret.logicop
+                conditions = ret.conditions
+                GenIfBranch(xml_rule, logicop, conditions, reloan_type, reloan_type_value, table_map, rules_map,
+                            label_map, type_map)
+                GenThenBranch(xml_rule, reloan_type_value, float(data[2]), data[4])
+                GenElseBranch(xml_rule, reloan_type_value, float(data[3]))
+
+            else:
+                # print('123-2')
+                GenTagBranch(xml_rule, ret, reloan_type, reloan_type_value, table_map, rules_map, label_map, type_map)
+                GenThenBranch(xml_rule, reloan_type_value, float(data[2]), data[4])
+                GenElseBranch(xml_rule, reloan_type_value, float(data[3]))
+
+    tree = ElementTree(root)
+    print(tree)
+    tree.write("./rule1.text", encoding='UTF-8', xml_declaration=True)
+
+    with open("./rule1.text", encoding='UTF-8') as f:
+        res = f.read()
+        res = res.replace("&lt;", '<').replace("&gt;", '>')
+
+    with open("./rule1_format.text", 'w', encoding='UTF-8') as f:
+        f.write(res)
+    os.remove("./rule1.text")
+
+
+def main():
+    p1 = '/Users/admin/Documents/首贷原订单交叉/0806首贷原订单交叉订单/extra_特征库.html'
+    p2 = '/Users/admin/Documents/首贷原订单交叉/0806首贷原订单交叉订单/extension_特征库.html'
+    p3 = '/Users/admin/Documents/首贷原订单交叉/0806首贷原订单交叉订单/approval_特征库.html'
+    p4 = '/Users/admin/Documents/首贷原订单交叉/0806首贷原订单交叉订单/feature_2.html'
+    table_map, rules_map, label_map, type_map = GetRulesMapFromFile([p1, p2, p3, p4])
+    text1 = '''when coalesce(apply_pinjamduit_20_amount_d30_fdc_v3_2,-9999999)>850000.0 and coalesce(card_360d_month_search_cnt_mean_chain_gap_izi3,-9999999)<=8.6175 and coalesce(shopping_install_time_oldest_day_appc,-9999999)<=467.23999
+then 100
+when coalesce(emer_related_cnt_neo,-9999999)>0.5 and coalesce(phone_card_3d_search_cnt_chain_pct_izi1,-9999999)>-0.7303 and coalesce(phone_card_60d_a_time_gap_search_cnt_cov_izi2,-9999999)>1.9529
+then 100
+when coalesce(bantusaku_install_time_last_day_fit,-9999999)>28.565001 and coalesce(d30_loan_amount_min_fdc,-9999999)<=545957.5 and coalesce(personalization_install_time_oldest_day_appc,-9999999)<=500.390015
+then 100
+when coalesce(apply_adapundi_20_num_d90_fdc_v3_2,-9999999)>3.5 and coalesce(phone_card_180d_bc_time_gap_search_cnt_mean_izi3,-9999999)>0.88445
+then 100
+when coalesce(all_dpd_max_rfdc,-9999999)>1.5 and coalesce(repaying_pct_fdc,-9999999)>0.3233 and coalesce(phone_card_90d_a_time_gap_search_cnt_cov_izi3,-9999999)<=1.7537 and coalesce(first_dana_time_gap_top,-9999999)>49.335251
+then 100
+when coalesce(inquiry_platform_rupiahcepat_fdc2,-9999999)>0.5 and coalesce(phone_30d_bc_company_search_cnt_max_izi2,-9999999)<=1.5 and coalesce(phone_card_7d_same_day_cnt_max_chain_gap_izi1,-9999999)>2.5
+then 100
+when coalesce(phone_card_7d_bc_time_gap_search_cnt_min_izi1,-9999999)>-4999999.5 and coalesce(cash_loan_total_amount_dall_fdc2,-9999999)<=10492167.0 and coalesce(age_pi,-9999999)<=28.5 and coalesce(shop_it90d_rows_rate_app3,-9999999)<=0.059412
+then 100
+when coalesce(all_dpd_max_rfdc,-9999999)>1.5 and coalesce(nilai_pendanaan_all_sum_fdc1,-9999999)<=1799999.0 and coalesce(phone_card_60d_company_search_cnt_cov_izi2,-9999999)>0.4805
+then 100
+when coalesce(all_loan_cnt_fdc,-9999999)<=2.5 and coalesce(bank_install_time_last_day_appc,-9999999)<=33.050001
+then 100
+when coalesce(overdue_lt_30dall_ratio_fdc1,-9999999)<=0.93635 and coalesce(ct_360d_6_18_ip3_diff_ct_rate_wifi,-9999999)>0.3875 and coalesce(year_amount_min_easycash_fdc_v3_2,-9999999)<=248221.5 and coalesce(phone_card_30d_search_cnt_chain_pct_izi2,-9999999)>1.31665
+then 100
+when coalesce(phone_60d_search_cnt_chain_pct_izi2,-9999999)<=-0.88565 and coalesce(d60_all_pay_loan_pct_fdc,-9999999)<=0.28195 and coalesce(phone_card_7d_same_day_cnt_max_izi1,-9999999)>1.5 and coalesce(card_180d_a_company_pct_izi3,-9999999)>0.63965
+then 100
+when coalesce(phone_card_15d_a_company_search_cnt_mean_izi2,-9999999)>2.3205 and coalesce(phone_360d_same_day_cnt_max_izi3,-9999999)>2.5 and coalesce(d180_all_pay_loan_pct_fdc,-9999999)>0.6127 and coalesce(berjalan_pendanaan_ratio_fdc2,-9999999)<=0.80735
+then 1
+when coalesce(same_emer_related_cnt_neo,-9999999)<=1.5 and coalesce(active_not_overdue_recent_day_pinjamduit_fdc_v3_2,-9999999)<=170.5 and coalesce(app_90_game_install_cnt_ratio_appc,-9999999)>0.165
+then 1
+when coalesce(year_amount_max_easycash_fdc_v3_2,-9999999)>560028.0 and coalesce(it60d_app_size_dev_app3,-9999999)>35.123001 and coalesce(d90_pos_update_gap_avg_tgi,-9999999)>267736.078125
+then 1
+when coalesce(d30_compete_cnt_pct_top,-9999999)<=0.73865 and coalesce(age_crf,-9999999)>38.5
+then 1
+when coalesce(d180_diff_platform_loan_max_amount_cov_fdc,-9999999)>0.19275 and coalesce(phone_card_1d_bc_company_pct_izi1,-9999999)<=0.13965 and coalesce(year_amount_min_easycash_fdc_v3_2,-9999999)>207250.5 and coalesce(phone_30d_a_company_search_cnt_mean_izi2,-9999999)>1.3875
+then 1
+when coalesce(nilai_pendanaan_fdc2,-9999999)>6457217.5 and coalesce(phone_card_3d_same_day_cnt_max_chain_gap_izi1,-9999999)<=2.5 and coalesce(finance_it7d_rows_rate_app3,-9999999)<=0.21294 and coalesce(d180_diff_platform_loan_max_amount_mean_fdc,-9999999)>3047292.375
+then 1
+when coalesce(nilai_pendanaan_90_sum_fdc1,-9999999)>1101500.0 and coalesce(phone_card_180d_search_cnt_chain_pct_izi3,-9999999)<=0.57415
+then 1
+when coalesce(active_amount_shopee_fdc_v3,-9999999)>16789671.0
+then 1
+when coalesce(apply_kredit_pintar_amount_self_diff_d90_fdc_v3,-9999999)<=-6550000.0 and coalesce(first_chrome_time_gap_top,-9999999)<=1554.443909
+then 1
+when coalesce(overdue_lt_90dall_ratio_fdc1,-9999999)<=0.0654 and coalesce(age_pi,-9999999)>31.5 and coalesce(install500k_it7d_rows_rate_app3,-9999999)<=0.021981
+then 1
+when coalesce(d15_pos_update_gap_max_tgi,-9999999)>240361.5 and coalesce(card_15d_bc_company_pct_izi2,-9999999)<=0.0646
+then 1'''
+    text2 = '''case when coalesce(apply_pinjamduit_20_amount_d30_fdc_v3_2,-9999999)>850000.0 and coalesce(card_360d_month_search_cnt_mean_chain_gap_izi3,-9999999)<=8.6175 and coalesce(shopping_install_time_oldest_day_appc,-9999999)<=467.23999
+then 13.53 else 40.94 end as 
+score_1_rule1,
+case when coalesce(emer_related_cnt_neo,-9999999)>0.5 and coalesce(phone_card_3d_search_cnt_chain_pct_izi1,-9999999)>-0.7303 and coalesce(phone_card_60d_a_time_gap_search_cnt_cov_izi2,-9999999)>1.9529
+then 17.81 else 40.65 end as 
+score_1_rule2,
+case when coalesce(bantusaku_install_time_last_day_fit,-9999999)>28.565001 and coalesce(d30_loan_amount_min_fdc,-9999999)<=545957.5 and coalesce(personalization_install_time_oldest_day_appc,-9999999)<=500.390015
+then 29.24 else 40.33 end as 
+score_1_rule3,
+case when coalesce(apply_adapundi_20_num_d90_fdc_v3_2,-9999999)>3.5 and coalesce(phone_card_180d_bc_time_gap_search_cnt_mean_izi3,-9999999)>0.88445
+then 26.21 else 40.41 end as 
+score_1_rule4,
+case when coalesce(all_dpd_max_rfdc,-9999999)>1.5 and coalesce(repaying_pct_fdc,-9999999)>0.3233 and coalesce(phone_card_90d_a_time_gap_search_cnt_cov_izi3,-9999999)<=1.7537 and coalesce(first_dana_time_gap_top,-9999999)>49.335251
+then 18.6 else 40.74 end as 
+score_1_rule5,
+case when coalesce(inquiry_platform_rupiahcepat_fdc2,-9999999)>0.5 and coalesce(phone_30d_bc_company_search_cnt_max_izi2,-9999999)<=1.5 and coalesce(phone_card_7d_same_day_cnt_max_chain_gap_izi1,-9999999)>2.5
+then 2.23 else 41.83 end as 
+score_1_rule6,
+case when coalesce(phone_card_7d_bc_time_gap_search_cnt_min_izi1,-9999999)>-4999999.5 and coalesce(cash_loan_total_amount_dall_fdc2,-9999999)<=10492167.0 and coalesce(age_pi,-9999999)<=28.5 and coalesce(shop_it90d_rows_rate_app3,-9999999)<=0.059412
+then -0.12 else 41.47 end as 
+score_1_rule7,
+case when coalesce(all_dpd_max_rfdc,-9999999)>1.5 and coalesce(nilai_pendanaan_all_sum_fdc1,-9999999)<=1799999.0 and coalesce(phone_card_60d_company_search_cnt_cov_izi2,-9999999)>0.4805
+then 1.69 else 40.9 end as 
+score_1_rule8,
+case when coalesce(all_loan_cnt_fdc,-9999999)<=2.5 and coalesce(bank_install_time_last_day_appc,-9999999)<=33.050001
+then 6.76 else 40.85 end as 
+score_1_rule9,
+case when coalesce(overdue_lt_30dall_ratio_fdc1,-9999999)<=0.93635 and coalesce(ct_360d_6_18_ip3_diff_ct_rate_wifi,-9999999)>0.3875 and coalesce(year_amount_min_easycash_fdc_v3_2,-9999999)<=248221.5 and coalesce(phone_card_30d_search_cnt_chain_pct_izi2,-9999999)>1.31665
+then 4.93 else 41.1 end as 
+score_1_rule10,
+case when coalesce(phone_60d_search_cnt_chain_pct_izi2,-9999999)<=-0.88565 and coalesce(d60_all_pay_loan_pct_fdc,-9999999)<=0.28195 and coalesce(phone_card_7d_same_day_cnt_max_izi1,-9999999)>1.5 and coalesce(card_180d_a_company_pct_izi3,-9999999)>0.63965
+then 14.53 else 41.79 end as 
+score_1_rule11,
+CASE when coalesce(phone_card_15d_a_company_search_cnt_mean_izi2,-9999999)>2.3205 and coalesce(phone_360d_same_day_cnt_max_izi3,-9999999)>2.5 and coalesce(d180_all_pay_loan_pct_fdc,-9999999)>0.6127 and coalesce(berjalan_pendanaan_ratio_fdc2,-9999999)<=0.80735
+then 77.11 else 62.66 end as 
+score_1_rule12,
+case when coalesce(same_emer_related_cnt_neo,-9999999)<=1.5 and coalesce(active_not_overdue_recent_day_pinjamduit_fdc_v3_2,-9999999)<=170.5 and coalesce(app_90_game_install_cnt_ratio_appc,-9999999)>0.165
+then 68.97 else 61.88 end as 
+score_1_rule13,
+case when coalesce(year_amount_max_easycash_fdc_v3_2,-9999999)>560028.0 and coalesce(it60d_app_size_dev_app3,-9999999)>35.123001 and coalesce(d90_pos_update_gap_avg_tgi,-9999999)>267736.078125
+then 76.32 else 62.59 end as 
+score_1_rule14,
+case when coalesce(d30_compete_cnt_pct_top,-9999999)<=0.73865 and coalesce(age_crf,-9999999)>38.5
+then 70.46 else 61.01 end as 
+score_1_rule15,
+case when coalesce(d180_diff_platform_loan_max_amount_cov_fdc,-9999999)>0.19275 and coalesce(phone_card_1d_bc_company_pct_izi1,-9999999)<=0.13965 and coalesce(year_amount_min_easycash_fdc_v3_2,-9999999)>207250.5 and coalesce(phone_30d_a_company_search_cnt_mean_izi2,-9999999)>1.3875
+then 89.55 else 60.24 end as 
+score_1_rule16,
+case when coalesce(nilai_pendanaan_fdc2,-9999999)>6457217.5 and coalesce(phone_card_3d_same_day_cnt_max_chain_gap_izi1,-9999999)<=2.5 and coalesce(finance_it7d_rows_rate_app3,-9999999)<=0.21294 and coalesce(d180_diff_platform_loan_max_amount_mean_fdc,-9999999)>3047292.375
+then 77.9 else 61.06 end as 
+score_1_rule17,
+case when coalesce(nilai_pendanaan_90_sum_fdc1,-9999999)>1101500.0 and coalesce(phone_card_180d_search_cnt_chain_pct_izi3,-9999999)<=0.57415
+then 75.64 else 60.74 end as 
+score_1_rule18,
+CASE when coalesce(active_amount_shopee_fdc_v3,-9999999)>16789671.0
+then 121.35 else 108.61 end as 
+score_1_rule19,
+case when coalesce(apply_kredit_pintar_amount_self_diff_d90_fdc_v3,-9999999)<=-6550000.0 and coalesce(first_chrome_time_gap_top,-9999999)<=1554.443909
+then 141.44 else 102.69 end as 
+score_1_rule20,
+case when coalesce(overdue_lt_90dall_ratio_fdc1,-9999999)<=0.0654 and coalesce(age_pi,-9999999)>31.5 and coalesce(install500k_it7d_rows_rate_app3,-9999999)<=0.021981
+then 134.8 else 106.86 end as 
+score_1_rule21,
+case when coalesce(d15_pos_update_gap_max_tgi,-9999999)>240361.5 and coalesce(card_15d_bc_company_pct_izi2,-9999999)<=0.0646
+then 125.23 else 105.37 end as 
+score_1_rule22'''
+    rule_list = text1.split("\n")
+    rule_list2 = text2.split(",\n")
+    rule_dict = {}
+    i = 0
+    rule_base_name = 'score_1_rule'
+    while i < len(rule_list)/2:
+        rule_format = rule_list[2*i].replace('when', '').replace('coalesce(', '').replace('-9999999)', '').replace(',', '').replace('::numeric', '').strip()
+        rule_type = rule_list[2 * i + 1].strip().split(" ")[-1]
+        # print(rule_format, rule_type)
+        rule_dict["%s%d" % (rule_base_name, i+1)] = [rule_format, rule_type]
+        i += 1
+    print('1:', rule_dict)
+    print(len(rule_dict))
+
+    
+    rule_score_dict = {}
+    i = 0
+    while i < len(rule_list2):
+        rule_format = rule_list2[i].split("\n")
+        rule_score, rule_name = rule_format[1], rule_format[2]
+        # print(rule_score, rule_name)
+        rule_name = rule_name.strip()
+        rule_score_list = rule_score.replace('then', '').replace('else', '').replace('end', '').replace('as', '').strip().split()
+        # print(rule_score_list)
+        rule_score_dict[rule_name] = [rule_score_list[0], rule_score_list[1]]
+        i += 1
+    print(rule_score_dict)
+
+    text1 = ["|".join(['firstloan_risk_level=1', rule_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][1], rule_dict["%s%d" % (rule_base_name,num)][1]]) for num in range(1, 12)]
+    text2 = ["|".join(['firstloan_risk_level=2', rule_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][1], rule_dict["%s%d" % (rule_base_name,num)][1]]) for num in range(12, 19)]
+    text3 = ["|".join(['firstloan_risk_level=3', rule_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][0], rule_score_dict["%s%d" % (rule_base_name,num)][1], rule_dict["%s%d" % (rule_base_name,num)][1]]) for num in range(19, 23)]
+    text= text1+text2+text3
+    print(text)
+    # print(table_map)
+    # print(rules_map)
+    ToXml(table_map, rules_map, label_map, type_map, text)
+
+
+if __name__ == "__main__":
+    main()
