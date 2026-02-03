@@ -1,0 +1,1272 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 10 10:40:50 2024
+
+@author: admin
+"""
+
+import os
+
+from boolean_parser import parse
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import ElementTree
+
+
+table = [
+    'model_result'
+]
+
+cond_map = {
+    "<": "LessThen",
+    "<=": "LessThenEquals",
+    ">": "GreaterThen",
+    ">=": "GreaterThenEquals",
+    "==": "Equals",
+}
+
+
+def GetRulesMapFromFile(files):
+    table_map = {}
+    rules_map = {}
+    label_map = {}
+    type_map = {}
+    for file in files:
+        tree = ElementTree(file=file)
+        root = tree.getroot()
+        for category in root.iter('category'):
+            table_name = category.attrib['name']
+            if table_name not in table:
+                continue
+            for elem in category.iter('var'):
+                name = elem.attrib['name']
+                label = elem.attrib['label']
+                types = elem.attrib['type']
+                lower_name = name.lower()
+                table_map[lower_name] = table_name
+                rules_map[lower_name] = name
+                label_map[lower_name] = label
+                type_map[lower_name] = types
+    return table_map, rules_map, label_map, type_map
+
+
+def GenIfBranch(parent, logicop, conditions, reloan_type,
+                reloan_type_value, table_map, rules_map, label_map, type_map, black, black_list, rule_type):
+    black = black.strip()
+    if_con_branch = SubElement(parent, 'if')
+    if logicop == "and":
+        cond_element = SubElement(if_con_branch, "and")
+    elif logicop == "or":
+        cond_element = SubElement(if_con_branch, "or")
+    else:
+        assert False, f'unsupport op: {logicop}'
+    atom = SubElement(cond_element, "atom", op="Equals")
+    left_attrs = {
+        "var-category": "参数",
+        "var": 'firstloan_risk_level',
+        "var-label": "firstloan_risk_level",
+        "datatype": "Integer",
+        "type": "parameter",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+    value_attr = {
+        "content": reloan_type_value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+
+    if black == '300':
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black3" % reloan_type_value,
+            "var-label": "firstloan_group%s_black3" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '200':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black2" % reloan_type_value,
+            "var-label": "firstloan_group%s_black2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+    elif black == '100':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black" % reloan_type_value,
+            "var-label": "firstloan_group%s_black" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+    elif black == '1':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '2':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white2" % reloan_type_value,
+            "var-label": "firstloan_group%s_white2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '3':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white2" % reloan_type_value,
+            "var-label": "firstloan_group%s_white2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white3" % reloan_type_value,
+            "var-label": "firstloan_group%s_white3" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    else:
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '1' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white" % reloan_type_value,
+                "var-label": "firstloan_group%s_white" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '2' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white2" % reloan_type_value,
+                "var-label": "firstloan_group%s_white2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '3' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white3" % reloan_type_value,
+                "var-label": "firstloan_group%s_white3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+    for cond in conditions:
+        atom = SubElement(cond_element, "atom",
+                          op=cond_map[cond.operator])
+        cond_name = cond.name
+
+        left_attrs = {
+            "var-category": "参数",
+            "var": cond_name,
+            "var-label": cond_name,
+            "datatype": "Double",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+
+        value_attr = {
+            "content": cond.value,
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+
+def GenTagBranch(parent, condition, reloan_type,
+                reloan_type_value, table_map, rules_map, label_map, type_map, black, black_list, rule_type):
+    print(black)
+    black = black.strip()
+
+    if_con_branch = SubElement(parent, 'if')
+    
+    cond_element = SubElement(if_con_branch, "and")
+    
+    atom = SubElement(cond_element, "atom", op="Equals")
+    left_attrs = {
+        "var-category": "参数",
+        "var": 'firstloan_risk_level',
+        "var-label": "firstloan_risk_level",
+        "datatype": "Integer",
+        "type": "parameter",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+    value_attr = {
+        "content": reloan_type_value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+
+    if black == '300':
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black3" % reloan_type_value,
+            "var-label": "firstloan_group%s_black3" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '200':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black2" % reloan_type_value,
+            "var-label": "firstloan_group%s_black2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+    elif black == '100':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_black" % reloan_type_value,
+            "var-label": "firstloan_group%s_black" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+    elif black == '1':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '2':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white2" % reloan_type_value,
+            "var-label": "firstloan_group%s_white2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    elif black == '3':
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white" % reloan_type_value,
+            "var-label": "firstloan_group%s_white" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="NotIn")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white2" % reloan_type_value,
+            "var-label": "firstloan_group%s_white2" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+
+        atom = SubElement(cond_element, "atom", op="Equals")
+        left_attrs = {
+            "var-category": "参数",
+            "var": "is_firstloan_group%s_white3" % reloan_type_value,
+            "var-label": "firstloan_group%s_white3" % reloan_type_value,
+            "datatype": "Integer",
+            "type": "parameter",
+        }
+        left = SubElement(atom, "left", attrib=left_attrs)
+        value_attr = {
+            "content": '1',
+            "type": "Input",
+        }
+        value = SubElement(atom, "value", attrib=value_attr)
+    else:
+        if '300' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black3" % reloan_type_value,
+                "var-label": "firstloan_group%s_black3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '200' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black2" % reloan_type_value,
+                "var-label": "firstloan_group%s_black2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '100' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_black" % reloan_type_value,
+                "var-label": "firstloan_group%s_black" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '1' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white" % reloan_type_value,
+                "var-label": "firstloan_group%s_white" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '2' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white2" % reloan_type_value,
+                "var-label": "firstloan_group%s_white2" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+
+        if '3' in black_list:
+            atom = SubElement(cond_element, "atom", op="NotIn")
+            left_attrs = {
+                "var-category": "参数",
+                "var": "is_firstloan_group%s_white3" % reloan_type_value,
+                "var-label": "firstloan_group%s_white3" % reloan_type_value,
+                "datatype": "Integer",
+                "type": "parameter",
+            }
+            left = SubElement(atom, "left", attrib=left_attrs)
+            value_attr = {
+                "content": '1',
+                "type": "Input",
+            }
+            value = SubElement(atom, "value", attrib=value_attr)
+    
+    atom = SubElement(cond_element, "atom",
+                      op=cond_map[condition.operator])
+    cond_name = condition.name
+
+    left_attrs = {
+        "var-category": "参数",
+        "var": cond_name,
+        "var-label": cond_name,
+        "datatype": "Double",
+        "type": "parameter",
+    }
+    left = SubElement(atom, "left", attrib=left_attrs)
+
+    value_attr = {
+        "content": condition.value,
+        "type": "Input",
+    }
+    value = SubElement(atom, "value", attrib=value_attr)
+
+
+def GenThenBranch(parent, reloan_type_value, value: float, black_list:str, rule_type):
+    then_branch = SubElement(parent, "then")
+    
+    black_list = black_list.strip()
+    print(black_list,  '--------')
+
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_%s_score_%s_2" % (rule_type,reloan_type_value),
+        "var-label": "firstloan_%s_score_%s_2" % (rule_type,reloan_type_value),
+        "datatype": "Double",
+        "type": "parameter"
+    }
+    var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+
+    value_attr = {
+        "var-category": "参数",
+        "var": "firstloan_%s_score_%s_2" % (rule_type,reloan_type_value),
+        "var-label": "firstloan_%s_score_%s_2" % (rule_type,reloan_type_value),
+        "datatype": "Double",
+        "type": "Parameter"
+    }
+    xml_value = SubElement(var_assign, "value", attrib=value_attr)
+
+    add_attr = {
+        "type": "Add"
+    }
+    sub_attr = {
+        "type": "Sub"
+    }
+    if value >= 0:
+        com = SubElement(xml_value, "complex-arith", attrib=add_attr)
+    else:
+        com = SubElement(xml_value, "complex-arith", attrib=sub_attr)
+
+    value_attr = {
+        "content": str(abs(value)),
+        "type": "Input"
+    }
+    SubElement(com, "value", attrib=value_attr)
+    else_branch = SubElement(parent, "else")
+    
+    
+def GenElseBranch(parent, reloan_type_value, value: float):
+    then_branch = SubElement(parent, "else")
+    value_attr = {
+        "var-category": "参数",
+        "var": "score_sec_rule_" + reloan_type_value,
+        "var-label": "sec规则评分_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "parameter"
+    }
+    var_assign = SubElement(then_branch, "var-assign", attrib=value_attr)
+
+    value_attr = {
+        "var-category": "参数",
+        "var": "score_sec_rule_" + reloan_type_value,
+        "var-label": "sec规则评分_" + reloan_type_value,
+        "datatype": "Double",
+        "type": "Parameter"
+    }
+    xml_value = SubElement(var_assign, "value", attrib=value_attr)
+
+    add_attr = {
+        "type": "Add"
+    }
+    sub_attr = {
+        "type": "Sub"
+    }
+    if value >= 0:
+        com = SubElement(xml_value, "complex-arith", attrib=add_attr)
+    else:
+        com = SubElement(xml_value, "complex-arith", attrib=sub_attr)
+
+    value_attr = {
+        "content": str(abs(value)),
+        "type": "Input"
+    }
+    SubElement(com, "value", attrib=value_attr)
+
+
+def ToXml(table_map, rules_map, label_map, type_map, rules_file):
+    root = Element("rule-set")
+    rema = SubElement(root, 'remark')
+    rema.text = '<![CDATA[]]>'
+
+    # with open(rules_file) as f:
+    if True:
+        for data in rules_file.keys():
+            reloan_type = 0
+            print(data)
+            if data == 'is_list1_inner_d7':
+                reloan_type = '1'
+            elif data == 'is_list2_inner_d7':
+                reloan_type = '2'
+            elif data == 'is_list3_inner_d7':
+                reloan_type = '3'
+
+            reloan_type_value = reloan_type
+
+            reloan_type_dict = rules_file[data]
+            # print('111', reloan_type_dict)
+            reloan_type_list = [int(i) for i in list(reloan_type_dict.keys())]
+            reloan_type_list.sort()
+            print('222', reloan_type_list)
+
+            for i in reloan_type_list:
+                group_list = [str(k) for k in reloan_type_list]
+                models_dict = reloan_type_dict[str(i)]
+                for j in models_dict.keys():
+                    res_bin, res_score = models_dict[j][0], models_dict[j][1]
+                    res_bin.sort(reverse=True)
+                    res_score.sort(reverse=True)
+                    # print(i, j, res_bin, res_score)
+                    if len(res_bin) == 1:
+                        continue
+                    for m, n in enumerate(res_bin):
+                        if m == 0:
+                            rule = j+'>%.3f'%res_bin[m]
+                        elif m == len(res_bin)-1:
+                            rule = j + '<=%.3f' % res_bin[m]
+                        else:
+                            rule = j + '<=%.3f' % res_bin[m-1] + ' and ' + j + '>%.3f' % res_bin[m]
+                        score = res_score[m]
+                        print(i, rule, score)
+
+                        xml_rule = SubElement(root, 'rule', name="rule")
+                        remark_branch = SubElement(xml_rule, 'remark')
+                        remark_branch.text = '<![CDATA[]]>'
+
+                        ret = parse(rule)
+                        # print(i, rule, score, ret)
+                        rule_type = ''
+                        if hasattr(ret, "logicop"):
+                            logicop = ret.logicop
+                            conditions = ret.conditions
+                            if 'rule' in conditions[0].name:
+                                GenIfBranch(xml_rule, logicop, conditions, reloan_type, reloan_type_value, table_map, rules_map, label_map, type_map, str(i), group_list, 'rule')
+                                GenThenBranch(xml_rule, reloan_type_value, score, str(i), 'rule')
+                            else:
+                                GenIfBranch(xml_rule, logicop, conditions, reloan_type, reloan_type_value, table_map, rules_map, label_map, type_map, str(i), group_list, 'model')
+                                GenThenBranch(xml_rule, reloan_type_value, score, str(i), 'model')
+                        else:
+                            if 'rule' in ret.name:
+                                GenTagBranch(xml_rule, ret, reloan_type, reloan_type_value, table_map, rules_map, label_map, type_map, str(i), group_list, 'rule')
+                                GenThenBranch(xml_rule, reloan_type_value, score, str(i), 'rule')
+                            else:
+                                GenTagBranch(xml_rule, ret, reloan_type, reloan_type_value, table_map, rules_map, label_map, type_map, str(i), group_list, 'model')
+                                GenThenBranch(xml_rule, reloan_type_value, score, str(i), 'model')
+
+    tree = ElementTree(root)
+    print('111', tree)
+    tree.write("./rule1.text", encoding='UTF-8', xml_declaration=True)
+
+    with open("./rule1.text", encoding='UTF-8') as f:
+        res = f.read()
+        res = res.replace("&lt;", '<').replace("&gt;", '>')
+
+    with open("./rule1_format.text", 'w', encoding='UTF-8') as f:
+        f.write(res)
+    os.remove("./rule1.text")
+
+
+def main():
+    # p1 = '../决策引擎-规则流解析/特征库_html/extra_特征库.html'
+    # p2 = '../决策引擎-规则流解析/特征库_html/extension_特征库.html'
+    p3 = '/Users/admin/Documents/首贷原订单交叉/0806首贷原订单交叉订单/approval_特征库.html'
+    table_map, rules_map, label_map, type_map = GetRulesMapFromFile([p3])
+
+    score_w='''case
+when is_list3_inner_d7=100 and score_3_rule>442.19 then 236.17
+when is_list3_inner_d7=100 and score_3_rule>416.58 then 202.5
+when is_list3_inner_d7=100 and score_3_rule>390.97 then 181.59
+when is_list3_inner_d7=100 then 164.62
+when is_list2_inner_d7=100 and score_2_rule>400.35 then 222.4
+when is_list2_inner_d7=100 then 211.49
+else 0 end as score_1_rule_w,
+
+case
+when is_list1_inner_d7=0 and score_1_model>483.39 then 515.58
+when is_list1_inner_d7=0 and score_1_model>463.21 then 470.59
+when is_list1_inner_d7=0 and score_1_model>427.4 then 442.72
+when is_list1_inner_d7=0 and score_1_model>405.93 then 418.52
+when is_list1_inner_d7=0 then 385.09
+when is_list1_inner_d7=1 and score_1_model>462.85 then 507.3
+when is_list1_inner_d7=1 and score_1_model>438.89 then 444.43
+when is_list1_inner_d7=1 and score_1_model>416.31 then 430.55
+when is_list1_inner_d7=1 and score_1_model>400.27 then 387.09
+when is_list1_inner_d7=1 then 267.68
+when is_list2_inner_d7=100 and score_2_model>471.53 then 335.01
+when is_list2_inner_d7=100 and score_2_model>434.71 then 224.51
+when is_list2_inner_d7=100 and score_2_model>408.77 then 198.46
+when is_list2_inner_d7=100 then 141.65
+when is_list2_inner_d7=0 and score_2_model>455.48 then 472.87
+when is_list2_inner_d7=0 and score_2_model>437.69 then 442.58
+when is_list2_inner_d7=0 and score_2_model>418.62 then 424.01
+when is_list2_inner_d7=0 and score_2_model>405.23 then 401.0
+when is_list2_inner_d7=0 then 355.13
+when is_list3_inner_d7=100 and score_3_model>460.68 then 260.39
+when is_list3_inner_d7=100 and score_3_model>436.86 then 236.47
+when is_list3_inner_d7=100 and score_3_model>422.79 then 206.64
+when is_list3_inner_d7=100 and score_3_model>400.41 then 160.31
+when is_list3_inner_d7=100 and score_3_model>386.86 then 117.08
+when is_list3_inner_d7=100 then 101.16
+else 0 end as score_1_model_w'''
+
+    model_bin_dict = {
+        'score_1_rule': 'firstloan_rule_score_1',
+        'score_1_model': 'firstloan_model_score_1',
+         'score_2_rule': 'firstloan_rule_score_2',
+         'score_2_model': 'firstloan_model_score_2',
+         'score_3_rule': 'firstloan_rule_score_3',
+         'score_3_model': 'firstloan_model_score_3',
+    }
+    # score1_list = score_w.split('\n\n')
+
+    model_bin_dict_2 = {}
+    score2_list = score_w.split('\n\n')
+    for i in score2_list:
+        bin_value = 0
+        bin_score = 0
+        bin_key = ''
+        bin_type = ''
+        bin_name = ''
+        i_list = i.replace(',', '').replace('case', '').strip().split('\n')
+
+        for j in i_list:
+            # print(j)
+            if 'when' in j and 'and' in j:
+                inequation0 = j.strip().split(' ')[1]
+                inequation1 = j.strip().split(' ')[3]
+                bin_score = float(j.strip().split(' ')[-1])
+
+                bin_key = inequation0.split('=')[0]
+                bin_type = inequation0.split('=')[1]
+                bin_name = inequation1.split('>')[0]
+                bin_value = float(inequation1.split('>')[1])
+            elif 'when' in j and 'and' not in j:
+                inequation0 = j.strip().split(' ')[1]
+                bin_score = float(j.strip().split(' ')[-1])
+
+                bin_key = inequation0.split('=')[0]
+                bin_type = inequation0.split('=')[1]
+            else:
+                continue
+
+            # print([bin_key,bin_type,bin_name,bin_value])
+            tmp1 = model_bin_dict_2.get(bin_key, {})
+            tmp2 = tmp1.get(bin_type, {})
+            tmp3 = tmp2.get(model_bin_dict[bin_name], [])
+
+            if not tmp3:
+                tmp3 = [[bin_value], [bin_score]]
+                tmp2[model_bin_dict[bin_name]] = tmp3
+                tmp1[bin_type] = tmp2
+                model_bin_dict_2[bin_key] = tmp1
+            else:
+                t1, t2 = tmp3[0], tmp3[1]
+                t1.append(bin_value)
+                t2.append(bin_score)
+                t1.sort()
+                t2.sort()
+                tmp3 = [t1, t2]
+                tmp2[model_bin_dict[bin_name]] = tmp3
+                tmp1[bin_type] = tmp2
+                model_bin_dict_2[bin_key] = tmp1
+    print(model_bin_dict_2)
+
+    # print(table_map)
+    # print(rules_map)
+    # print(label_map)
+    # print(type_map)
+    ToXml(table_map, rules_map, label_map, type_map, model_bin_dict_2)
+
+
+if __name__ == "__main__":
+    main()
