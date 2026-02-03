@@ -79,7 +79,9 @@ table = [
     'user_loan_again_fea',
     'user_loan_again_term2_fea',
     'wifi_info_fea',
-    'work_info'
+    'work_info',
+    'model_fdc_v3_2_fea',
+    'model_fdc_v3_1_fea'
 ]
 
 cond_map = {
@@ -149,6 +151,8 @@ table_suffix = {'app_category_fea': '_appc',
                 'model_fdc_v2_fea': '_fdc2',
                 'rule_fdc_fea': '_rfdc',
                 'rule_izi_fea': '_rizi',
+                'model_fdc_v3_2_fea': '_fdc_v3_2',
+                'model_fdc_v3_1_fea': '_fdc_v3'
                 }
 
 
